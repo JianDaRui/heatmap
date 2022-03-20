@@ -158,8 +158,9 @@
         let heatMapInstance = undefined
 
         const canvasEl = document.createElement('canvas')
-
-
+        const ctx = canvasEl.getContext("2d")
+        ctx.translate(rectInfo.width / 2, rectInfo.height / 2)
+        ctx.scale(1, -1)
         const legendCanvas = document.createElement('canvas')
         legendCanvas.width = 100;
         legendCanvas.height = 10;
@@ -174,12 +175,7 @@
           dialogInput.value = false
         }
         function handlerSure() {
-          let data = computedPoint()
-          heatMapInstance.setData({
-            min: 0,
-            max: 100,
-            data: data
-          })
+          heatMapInstance.setData(generate())
           dialogInput.value = false
         }
         function updateLegend(data) {
@@ -197,126 +193,51 @@
             gradientRef.value.src = legendCanvas.toDataURL()
           }
         }
-
-        function dfs(res, x, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue) {
-          if (x < minWidth || x >= maxWidth
-            || y < minHeight || y >= maxHeight
-            || value < minValue || value > maxHeight
-          ) {
-            return
+        // generate 1000 datapoints
+        function generate() {
+          // randomly generate extremas
+          var extremas = [(Math.random() * 1000) >> 0, (Math.random() * 1000) >> 0];
+          var max = Math.max.apply(Math, extremas);
+          var min = Math.min.apply(Math, extremas);
+          var t = [];
+          for (var i = 0; i < 1000; i++) {
+            var x = (Math.random() * rectInfo.width) >> 0;
+            var y = (Math.random() * rectInfo.height) >> 0;
+            var c = ((Math.random() * max - min) >> 0) + 50;
+            // btw, we can set a radius on a point basis
+            var r = (Math.random() * 80) >> 0;
+            // add to dataset
+            t.push({ x: x, y: y, value: c, radius: r });
           }
-
-          res.push({ x: x, y: y, value: value, radius: radius, minWidth: minWidth, minHeight: minHeight, maxWidth: maxWidth, maxHeight: maxHeight, minValue: minValue, maxValue })
-          value -= 10
-          radius = Math.random() * 100
-          dfs(res, x - 50, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
-          dfs(res, x + 50, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
-          dfs(res, x, y - 50, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
-          dfs(res, x, y + 50, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
-        }
-
-        function generateData(res) {
-          // let res = 0;
-          for (let i = 0; i < 8; i++) {
-            let { x, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue } = form[i]
-            dfs(res, x, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
+          return {
+            min: min,
+            max: max,
+            data: t
           }
-          return res;
-        }
+        };
 
         function initPoint() {
           const width = rectInfo.width
           const height = rectInfo.height
-
           const xGap = Math.floor(width / 4)
           const yGap = Math.floor(height / 4)
-          const xPointGap = Math.floor(xGap / 2)
-          const yPointGap = Math.floor(yGap / 2)
           let res = []
           let x = 0;
           let y = 0;
-          let minWidth = 0
-          let minHeight = 0
-          let maxWidth = 0
-          let maxHeight = 0
           let index = 0;
           for (let i = 1; i < 4; i++) {
             for (let j = 1; j < 4; j++) {
               x = i * xGap
               y = j * yGap
-              value = 0
-
-              minWidth = Math.min(minWidth, x + xPointGap, x - xPointGap)
-              minHeight = Math.min(minHeight, y + yPointGap, y - xPointGap)
-              maxWidth = Math.max(maxWidth, x + xPointGap, x - xPointGap)
-              maxHeight = Math.max(maxHeight, y + yPointGap, y - yPointGap)
-
+              value = 100
               res.push({
                 x: x,
                 y: y,
                 value: value,
                 radius: 100,
-                minWidth: minWidth,
-                minHeight: minHeight,
-                maxWidth: maxWidth,
-                maxHeight: maxHeight,
-                minValue: value,
-                maxValue: value
               })
             }
           }
-          // const { floor, max, abs } = Math
-          // form[0].minValue = 0
-          // form[0].maxValue = floor(max(abs(res[1].value - res[0].value), abs(res[3].value - res[0].value)))
-          // generateData(res)
-          return res
-        }
-        function computedPoint() {
-          const width = rectInfo.width
-          const height = rectInfo.height
-
-          const xGap = Math.floor(width / 4)
-          const yGap = Math.floor(height / 4)
-          const xPointGap = Math.floor(xGap / 2)
-          const yPointGap = Math.floor(yGap / 2)
-          let res = []
-          let x = 0;
-          let y = 0;
-          let minWidth = 0
-          let minHeight = 0
-          let maxWidth = 0
-          let maxHeight = 0
-          let index = 0;
-          for (let i = 1; i < 4; i++) {
-            for (let j = 1; j < 4; j++) {
-              x = i * xGap
-              y = j * yGap
-              value = form[index++].value || Math.random() * 100
-
-              minWidth = Math.min(minWidth, x + xPointGap, x - xPointGap)
-              minHeight = Math.min(minHeight, y + yPointGap, y - xPointGap)
-              maxWidth = Math.max(maxWidth, x + xPointGap, x - xPointGap)
-              maxHeight = Math.max(maxHeight, y + yPointGap, y - yPointGap)
-
-              res.push({
-                x: x,
-                y: y,
-                value: value,
-                radius: 100,
-                minWidth: minWidth,
-                minHeight: minHeight,
-                maxWidth: maxWidth,
-                maxHeight: maxHeight,
-                minValue: value,
-                maxValue: value
-              })
-            }
-          }
-          const { floor, max, abs } = Math
-          form[0].minValue = 0
-          form[0].maxValue = floor(max(abs(form[1].value - form[0].value), abs(form[3].value - form[0].value)))
-
-          generateData(res)
           return res
         }
 
@@ -334,7 +255,7 @@
               updateLegend(data);
             }
           })
-          heatMapInstance.setData(data.value)
+          heatMapInstance.setData(generate())
         })
 
         return {
