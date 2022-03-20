@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>HeapMap</title>
+  <script src="https://unpkg.com/vue@next"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <!-- 导入组件库 -->
+  <script src="https://unpkg.com/element-plus"></script>
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    body {
+      font-family: sans-serif;
+    }
+
+    body * {
+      font-weight: 200;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      background: rgba(0, 0, 0, .1);
+    }
+
+    #heatmapContainer {
+      width: 100%;
+      height: 100%;
+    }
+
+    .footer {
+      background: white;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      padding: 10px;
+    }
+
+    .min {
+      float: left;
+    }
+
+    .max {
+      float: right;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div id="heatmapContainer" ref="heatMapContainer">
+    </div>
+    <!-- footer -->
+    <el-card class="footer" ref="footer" shadow="never">
+      <div>数据映射</div>
+      <span class="min" ref="minRef"></span>
+      <span class="max" ref="maxRef"></span>
+      <img class="gradient" ref="gradientRef" src="" style="width:100%" />
+      <el-button type="primary" size="small" @click="handlerInput">输入</el-button>
+    </el-card>
+
+    <!-- 输入对话框 -->
+    <el-dialog v-model="dialogInput" width="45%" title="数据录入">
+      <!-- 桌面大小 -->
+      <el-form :model="rectInfo">
+        <el-row>
+          <el-form-item label="宽" :label-width="formLabelWidth">
+            <el-input v-model="rectInfo.width" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="高" :label-width="formLabelWidth">
+            <el-input v-model="rectInfo.height" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+        </el-row>
+      </el-form>
+      <!-- 数据表单 -->
+      <el-form :model="form">
+        <el-row :gutter="1">
+          <el-form-item label="value1" :label-width="formLabelWidth">
+            <el-input v-model="form[0].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="value2" :label-width="formLabelWidth">
+            <el-input v-model="form[1].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="value3" :label-width="formLabelWidth">
+            <el-input v-model="form[2].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+        </el-row>
+        <el-row :gutter="2">
+          <el-form-item label="value4" :label-width="formLabelWidth">
+            <el-input v-model="form[3].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="value5" :label-width="formLabelWidth">
+            <el-input v-model="form[4].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="value6" :label-width="formLabelWidth">
+            <el-input v-model="form[5].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+        </el-row>
+        <el-row :gutter="2">
+          <el-form-item label="value8" :label-width="formLabelWidth">
+            <el-input v-model="form[6].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="value8" :label-width="formLabelWidth">
+            <el-input v-model="form[7].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="value9" :label-width="formLabelWidth">
+            <el-input v-model="form[8].value" class="w-50 m-2" autocomplete="off" />
+          </el-form-item>
+        </el-row>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="hanlderClose">取消</el-button>
+          <el-button type="primary" @click="handlerSure">确认</el-button>
+        </span>
+      </template>
+    </el-dialog>
+    <!--  -->
+
+  </div>
+  <script src="./heatmap.js"></script>
+  <script>
+    const { reactive, ref, onMounted, computed, watch, toRaw } = Vue
+
+    const App = {
+      name: "App",
+      setup() {
+        const rectInfo = reactive({
+          width: (+window.getComputedStyle(document.body).width.replace(/px/, '')),
+          height: (+window.getComputedStyle(document.body).height.replace(/px/, ''))
+        })
+        let form = reactive(initPoint())
+        const dialogInput = ref(false)
+
+        const heatMapContainer = ref(null)
+        const gradientRef = ref(null)
+        const minRef = ref(null)
+        const maxRef = ref(null)
+
+        const data = computed(() => {
+          const values = form.map(item => item.value)
+          return {
+            min: Math.min(...values),
+            max: Math.max(...values),
+            data: form
+          }
+        })
+        const formLabelWidth = '80px'
+        let heatMapInstance = undefined
+
+        const canvasEl = document.createElement('canvas')
+
+
+        const legendCanvas = document.createElement('canvas')
+        legendCanvas.width = 100;
+        legendCanvas.height = 10;
+
+        const legendCtx = legendCanvas.getContext('2d')
+        let gradientCfg = {};
+
+        function handlerInput() {
+          dialogInput.value = true
+        }
+        function hanlderClose() {
+          dialogInput.value = false
+        }
+        function handlerSure() {
+          let data = computedPoint()
+          heatMapInstance.setData({
+            min: 0,
+            max: 100,
+            data: data
+          })
+          dialogInput.value = false
+        }
+        function updateLegend(data) {
+          minRef.value.innerHTML = data.min
+          maxRef.value.innerHTML = data.max
+          if (data.gradient != gradientCfg) {
+            gradientCfg = data.gradient
+            let gradient = legendCtx.createLinearGradient(0, 0, 100, 1)
+            for (let key in gradientCfg) {
+              gradient.addColorStop(key, gradientCfg[key])
+            }
+
+            legendCtx.fillStyle = gradient
+            legendCtx.fillRect(0, 0, 100, 10)
+            gradientRef.value.src = legendCanvas.toDataURL()
+          }
+        }
+
+        function dfs(res, x, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue) {
+          if (x < minWidth || x >= maxWidth
+            || y < minHeight || y >= maxHeight
+            || value < minValue || value > maxHeight
+          ) {
+            return
+          }
+
+          res.push({ x: x, y: y, value: value, radius: radius, minWidth: minWidth, minHeight: minHeight, maxWidth: maxWidth, maxHeight: maxHeight, minValue: minValue, maxValue })
+          value -= 10
+          radius = Math.random() * 100
+          dfs(res, x - 50, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
+          dfs(res, x + 50, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
+          dfs(res, x, y - 50, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
+          dfs(res, x, y + 50, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
+        }
+
+        function generateData(res) {
+          // let res = 0;
+          for (let i = 0; i < 8; i++) {
+            let { x, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue } = form[i]
+            dfs(res, x, y, value, radius, minWidth, minHeight, maxWidth, maxHeight, minValue, maxValue)
+          }
+          return res;
+        }
+
+        function initPoint() {
+          const width = rectInfo.width
+          const height = rectInfo.height
+
+          const xGap = Math.floor(width / 4)
+          const yGap = Math.floor(height / 4)
+          const xPointGap = Math.floor(xGap / 2)
+          const yPointGap = Math.floor(yGap / 2)
+          let res = []
+          let x = 0;
+          let y = 0;
+          let minWidth = 0
+          let minHeight = 0
+          let maxWidth = 0
+          let maxHeight = 0
+          let index = 0;
+          for (let i = 1; i < 4; i++) {
+            for (let j = 1; j < 4; j++) {
+              x = i * xGap
+              y = j * yGap
+              value = 0
+
+              minWidth = Math.min(minWidth, x + xPointGap, x - xPointGap)
+              minHeight = Math.min(minHeight, y + yPointGap, y - xPointGap)
+              maxWidth = Math.max(maxWidth, x + xPointGap, x - xPointGap)
+              maxHeight = Math.max(maxHeight, y + yPointGap, y - yPointGap)
+
+              res.push({
+                x: x,
+                y: y,
+                value: value,
+                radius: 100,
+                minWidth: minWidth,
+                minHeight: minHeight,
+                maxWidth: maxWidth,
+                maxHeight: maxHeight,
+                minValue: value,
+                maxValue: value
+              })
+            }
+          }
+          // const { floor, max, abs } = Math
+          // form[0].minValue = 0
+          // form[0].maxValue = floor(max(abs(res[1].value - res[0].value), abs(res[3].value - res[0].value)))
+          // generateData(res)
+          return res
+        }
+        function computedPoint() {
+          const width = rectInfo.width
+          const height = rectInfo.height
+
+          const xGap = Math.floor(width / 4)
+          const yGap = Math.floor(height / 4)
+          const xPointGap = Math.floor(xGap / 2)
+          const yPointGap = Math.floor(yGap / 2)
+          let res = []
+          let x = 0;
+          let y = 0;
+          let minWidth = 0
+          let minHeight = 0
+          let maxWidth = 0
+          let maxHeight = 0
+          let index = 0;
+          for (let i = 1; i < 4; i++) {
+            for (let j = 1; j < 4; j++) {
+              x = i * xGap
+              y = j * yGap
+              value = form[index++].value || Math.random() * 100
+
+              minWidth = Math.min(minWidth, x + xPointGap, x - xPointGap)
+              minHeight = Math.min(minHeight, y + yPointGap, y - xPointGap)
+              maxWidth = Math.max(maxWidth, x + xPointGap, x - xPointGap)
+              maxHeight = Math.max(maxHeight, y + yPointGap, y - yPointGap)
+
+              res.push({
+                x: x,
+                y: y,
+                value: value,
+                radius: 100,
+                minWidth: minWidth,
+                minHeight: minHeight,
+                maxWidth: maxWidth,
+                maxHeight: maxHeight,
+                minValue: value,
+                maxValue: value
+              })
+            }
+          }
+          const { floor, max, abs } = Math
+          form[0].minValue = 0
+          form[0].maxValue = floor(max(abs(form[1].value - form[0].value), abs(form[3].value - form[0].value)))
+
+          generateData(res)
+          return res
+        }
+
+        onMounted(() => {
+          heatMapInstance = h337.create({
+            container: heatMapContainer.value,
+            canvas: canvasEl,
+            width: rectInfo.width,
+            height: rectInfo.height,
+            maxOpacity: 0.5,
+            minOpacity: 0.1,
+            radius: 100,
+            blur: 1,
+            onExtremaChange: function onExtremaChange(data) {
+              updateLegend(data);
+            }
+          })
+          heatMapInstance.setData(data.value)
+        })
+
+        return {
+          form,
+          minRef,
+          maxRef,
+          rectInfo,
+          gradientRef,
+          dialogInput,
+          handlerSure,
+          hanlderClose,
+          handlerInput,
+          formLabelWidth,
+          heatMapContainer
+        }
+      }
+    }
+
+    const app = Vue.createApp(App).use(ElementPlus).mount("#app")
+
+  </script>
+</body>
+
+</html>
