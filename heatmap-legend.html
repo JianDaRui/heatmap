@@ -391,19 +391,16 @@
     }
     // 用于计算根据每个原始点的dfs
     GeneratePoints.prototype.perOriginPointDfs = function () {
-      for (let i = 0; i < this.row; i++) {
-        for (let j = 0; j < this.column; j++) {
-          this.data.push(this.pointsOrigin[i][j])
-          // 开始由当前点进行扩散
-          this._bfs(this.data, this.pointsOrigin[i][j])
-        }
+      let points = this.pointsOrigin.flat().sort((p1, p2) => p1.value - p2.value)
+      while(points.length) {
+        let point = points.pop()
+        this._bfs(point)
       }
+      
       return this.data
     }
-    GeneratePoints.prototype._bfs = function (data, currentPoint) {
-      const { 
-        x: initX,
-        y: initY,
+    GeneratePoints.prototype._bfs = function (currentPoint) {
+      const {
         value: initValue,
         left: leftBoundary,
         right: rightBoundary,
@@ -412,14 +409,18 @@
       } = currentPoint
       const queue = [currentPoint]
       const vector = this.vector
+      const data = this.data
+      const memo = {}
       while(queue.length) {
         const point = queue.pop()
         for (let v of vector) {
           let x = point.x + v[0]
           let y = point.y + v[1]
-          let value = point.value - 5
+          let key = x + '_' + y
+          if(memo[key]) continue
+          let value = point.value - 1
           if(x >= leftBoundary && x <= rightBoundary && y >= topBoundary && y <= bottomBoundary) {
-            
+            memo[key] = true
             data.push({
               x: x,
               y: y,
@@ -437,10 +438,9 @@
       return data
     }
 
-    let instance = new GeneratePoints(500, 500, 3, 3, 100)
+    let instance = new GeneratePoints(500, 500, 3, 3, 10)
     instance.init()
     instance.computedBoundary()
-    console.log(instance.pointsOrigin)
     instance.perOriginPointDfs()
     console.log(instance.data)
   </script>
