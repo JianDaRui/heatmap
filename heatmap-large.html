@@ -41,8 +41,8 @@
     // 生成数据
     function generateData(theta, min, max) {
       let data = [];
-      for (let i = 0; i <= 500; i++) {
-        for (let j = 0; j <= 500; j++) {
+      for (let i = 0; i <= 200; i++) {
+        for (let j = 0; j <= 100; j++) {
           // let x = (max - min) * i / 200 + min;
           // let y = (max - min) * j / 100 + min;
           data.push([i, j, noise.perlin2(i / 40, j / 20) + 0.5]);
