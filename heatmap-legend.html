@@ -131,6 +131,157 @@
   <script>
     const { reactive, ref, onMounted, computed, watch, toRaw } = Vue
 
+    function GeneratePoints(width, height, row = 3, column = 3, pointGap = 20) {
+      this.width = width
+      this.height = height
+      this.row = row
+      this.column = column
+      this.pointGap = pointGap
+      this.vector = [[0, pointGap], [0, -pointGap], [pointGap, 0], [-pointGap, 0]]
+      this.xAxisGap = Math.floor(width / (column + 1))
+      this.yAxisGap = Math.floor(height / (row + 1))
+
+      this.pointsOrigin = []
+      this.data = []
+    }
+
+    GeneratePoints.prototype.init = function () {
+      for (let r = 1; r <= this.row; r++) {
+        let colArr = []
+        for (let c = 1; c <= this.column; c++) {
+          colArr.push({
+            x: this.xAxisGap * c,
+            y: this.yAxisGap * r,
+            value: Math.random() * 100 + 30,
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            radius: 100
+          })
+        }
+        this.pointsOrigin.push(colArr)
+      }
+    }
+    // 右边的点到左边的点的距离
+    // 用于确定右边点的left,左边点的right
+    GeneratePoints.prototype._rightToLeftBoundary = function (currentPoint, leftPoint) {
+      const leftDistance = currentPoint.x - leftPoint.x
+      const leftTotal = currentPoint.value + leftPoint.value
+      const leftScale = (currentPoint.value / leftTotal) * leftDistance
+      currentPoint.left = currentPoint.x - leftScale
+      leftPoint.right = leftPoint.x + leftDistance - leftScale
+    }
+    // 底部的点到顶部的点的距离
+    // 用于确定底部点的top, 顶部点的bottom
+    GeneratePoints.prototype._bottomToTopBoundary = function (currentPoint, topPoint) {
+      const topDistance = currentPoint.y - topPoint.y
+      const topTotal = currentPoint.value + topPoint.value
+      const topScale = (currentPoint.value / topTotal) * topDistance
+      
+      currentPoint.top = currentPoint.y - topScale
+      topPoint.bottom = topPoint.y + topDistance - topScale
+    }
+    GeneratePoints.prototype.computedBoundary = function () {
+      // 计算外边 上下边界
+      for (let i = 0; i < this.column; i++) {
+        this.pointsOrigin[0][i].top = 0
+        this.pointsOrigin[this.row - 1][i].bottom = this.height
+        // 最后一排的上边界
+        // const 
+        this._bottomToTopBoundary(this.pointsOrigin[this.row - 1][i], this.pointsOrigin[this.row - 2][i])
+        if (i > 0) {
+          this._rightToLeftBoundary(this.pointsOrigin[0][i], this.pointsOrigin[0][i - 1])
+          this._rightToLeftBoundary(this.pointsOrigin[this.row - 1][i], this.pointsOrigin[this.row - 1][i - 1])
+        }
+      }
+
+      // 计算外边 左右边界
+      for (let i = 0; i < this.row; i++) {
+        this.pointsOrigin[i][0].left = 0
+        this.pointsOrigin[i][this.column - 1].bottom = this.height
+        // 最后一列的左边界
+        // const 
+        this._rightToLeftBoundary(this.pointsOrigin[i][this.column - 1], this.pointsOrigin[i][this.column - 2])
+        if (i > 0) {
+          this._bottomToTopBoundary(this.pointsOrigin[i][0], this.pointsOrigin[i - 1][0])
+          this._bottomToTopBoundary(this.pointsOrigin[i][this.column - 1], this.pointsOrigin[i - 1][this.column - 1])
+        }
+      }
+      /**
+       * 计算内部点的上下左右边界
+       * 上下左右边界的距离为
+       * 相同方向上点的value占比 * 两点之间同方向的距离
+       * 
+      */
+      for (let i = 1; i < this.row - 1; i++) {
+        for (let j = 1; j < this.column - 1; j++) {
+          // top
+          this._bottomToTopBoundary(this.pointsOrigin[i][j], this.pointsOrigin[i - 1][j - 1])
+          // left 
+          this._rightToLeftBoundary(this.pointsOrigin[i][j], this.pointsOrigin[i][j - 1])
+        }
+      }
+    }
+    // 用于计算根据每个原始点的dfs
+    GeneratePoints.prototype.perOriginPointDfs = function () {
+      // let points = this.pointsOrigin.flat().sort((p1, p2) => p1.value - p2.value)
+      let points = this.pointsOrigin.flat()
+      while(points.length) {
+        let point = points.pop()
+        this._bfs(point)
+      }
+      
+      return this.data
+    }
+    GeneratePoints.prototype._bfs = function (currentPoint) {
+      const {
+        value: initValue,
+        left: leftBoundary,
+        right: rightBoundary,
+        top: topBoundary,
+        bottom: bottomBoundary
+      } = currentPoint
+      const queue = [currentPoint]
+      
+      const vector = this.vector
+      const data = this.data
+      data.push(currentPoint)
+      const memo = {}
+      while(queue.length) {
+        const point = queue.pop()
+        for (let v of vector) {
+          let x = point.x + v[0]
+          let y = point.y + v[1]
+          let key = x + '_' + y
+          if(memo[key]) continue
+          let value = point.value - 10
+          if(x >= leftBoundary && x <= rightBoundary && y >= topBoundary && y <= bottomBoundary) {
+            memo[key] = true
+            data.push({
+              x: x,
+              y: y,
+              value: value,
+              radius: 60
+            })
+            queue.push({
+              x: x,
+              y: y ,
+              value: value
+            })
+          }
+        }
+      }
+      return data
+    }
+
+    width =  (+window.getComputedStyle(document.body).width.replace(/px/, '')),
+    height = (+window.getComputedStyle(document.body).height.replace(/px/, ''))
+    let instance = new GeneratePoints(width, height, 3, 3, 50)
+    instance.init()
+    instance.computedBoundary()
+    instance.perOriginPointDfs()
+    console.log(instance.pointsOrigin, instance.data)
     const App = {
       name: "App",
       setup() {
@@ -138,7 +289,7 @@
           width: (+window.getComputedStyle(document.body).width.replace(/px/, '')),
           height: (+window.getComputedStyle(document.body).height.replace(/px/, ''))
         })
-        let form = reactive(initPoint())
+        let form = reactive([])
         const dialogInput = ref(false)
 
         const heatMapContainer = ref(null)
@@ -209,55 +360,6 @@
           }
         }
 
-        // generate 1000 datapoints
-        function generate() {
-          // randomly generate extremas
-          var extremas = [(Math.random() * 1000) >> 0, (Math.random() * 1000) >> 0];
-          var max = Math.max.apply(Math, extremas);
-          var min = Math.min.apply(Math, extremas);
-          var t = [];
-          for (var i = 0; i < 50; i++) {
-            var x = (Math.random() * rectInfo.width) >> 0;
-            var y = (Math.random() * rectInfo.height) >> 0;
-            var c = ((Math.random() * max - min) >> 0) + 100;
-            // btw, we can set a radius on a point basis
-            var r = (Math.random() * 80) + 300 >> 0;
-            // add to dataset
-            t.push({ x: x, y: y, value: c, radius: r });
-          }
-          return {
-            min: min,
-            max: max,
-            data: t
-            // data: generateData()
-          }
-        };
-
-        function initPoint() {
-          const width = rectInfo.width
-          const height = rectInfo.height
-          const xGap = Math.floor(width / 4)
-          const yGap = Math.floor(height / 4)
-          let res = []
-          let x = 0;
-          let y = 0;
-          let index = 0;
-          for (let i = 1; i < 4; i++) {
-            for (let j = 1; j < 4; j++) {
-              x = i * xGap
-              y = j * yGap
-              value = 100
-              res.push({
-                x: x,
-                y: y,
-                value: value,
-                radius: 100,
-              })
-            }
-          }
-          return res
-        }
-
         onMounted(() => {
           heatMapInstance = h337.create({
             container: heatMapContainer.value,
@@ -275,7 +377,13 @@
             }
           })
           // heatMapInstance.setData(generate())
-          // heatMapInstance.setData()
+          console.log(instance.pointsOrigin)
+          heatMapInstance.setData({
+            min: 0,
+            max: 100,
+            // data: instance.pointsOrigin.flat()
+            data: instance.data
+          })
         })
 
         return {
@@ -296,153 +404,6 @@
 
     const app = Vue.createApp(App).use(ElementPlus).mount("#app")
 
-
-    function GeneratePoints(width, height, row = 3, column = 3, pointGap = 20) {
-      this.width = width
-      this.height = height
-      this.row = row
-      this.column = column
-      this.pointGap = pointGap
-      this.vector = [[0, pointGap], [0, -pointGap], [pointGap, 0], [-pointGap, 0]]
-      this.xAxisGap = Math.floor(width / (column + 1))
-      this.yAxisGap = Math.floor(height / (row + 1))
-
-      this.pointsOrigin = []
-      this.data = []
-    }
-
-    GeneratePoints.prototype.init = function () {
-      for (let r = 1; r <= this.row; r++) {
-        let colArr = []
-        for (let c = 1; c <= this.column; c++) {
-          colArr.push({
-            x: this.xAxisGap * c,
-            y: this.yAxisGap * r,
-            value: Math.random() * 100 + 30,
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            radius: 100
-          })
-        }
-        this.pointsOrigin.push(colArr)
-      }
-    }
-    // 右边的点到左边的点的距离
-    // 用于确定右边点的left,左边点的right
-    GeneratePoints.prototype.rightToLeftBoundary = function (currentPoint, leftPoint) {
-      const leftDistance = currentPoint.x - leftPoint.x
-      const leftTotal = currentPoint.value + leftPoint.value
-      const leftScale = (currentPoint.value / leftTotal) * leftDistance
-      currentPoint.left = currentPoint.x - leftScale
-      leftPoint.right = leftPoint.x + leftDistance - leftScale
-    }
-    // 底部的点到顶部的点的距离
-    // 用于确定底部点的top, 顶部点的bottom
-    GeneratePoints.prototype.bottomToTopBoundary = function (currentPoint, topPoint) {
-      const topDistance = currentPoint.y - topPoint.y
-      const topTotal = currentPoint.value + topPoint.value
-      const topScale = (currentPoint.value / topTotal) * topDistance
-      
-      currentPoint.top = currentPoint.y - topScale
-      topPoint.bottom = topPoint.y + topDistance - topScale
-    }
-    GeneratePoints.prototype.computedBoundary = function () {
-      // 计算外边 上下边界
-      for (let i = 0; i < this.column; i++) {
-        this.pointsOrigin[0][i].top = 0
-        this.pointsOrigin[this.row - 1][i].bottom = this.height
-        // 最后一排的上边界
-        // const 
-        this.bottomToTopBoundary(this.pointsOrigin[this.row - 1][i], this.pointsOrigin[this.row - 2][i])
-        if (i > 0) {
-          this.rightToLeftBoundary(this.pointsOrigin[0][i], this.pointsOrigin[0][i - 1])
-          this.rightToLeftBoundary(this.pointsOrigin[this.row - 1][i], this.pointsOrigin[this.row - 1][i - 1])
-        }
-      }
-
-      // 计算外边 左右边界
-      for (let i = 0; i < this.row; i++) {
-        this.pointsOrigin[i][0].left = 0
-        this.pointsOrigin[i][this.column - 1].bottom = this.height
-        // 最后一列的左边界
-        // const 
-        this.rightToLeftBoundary(this.pointsOrigin[i][this.column - 1], this.pointsOrigin[i][this.column - 2])
-        if (i > 0) {
-          this.bottomToTopBoundary(this.pointsOrigin[i][0], this.pointsOrigin[i - 1][0])
-          this.bottomToTopBoundary(this.pointsOrigin[i][this.column - 1], this.pointsOrigin[i - 1][this.column - 1])
-        }
-      }
-      /**
-       * 计算内部点的上下左右边界
-       * 上下左右边界的距离为
-       * 相同方向上点的value占比 * 两点之间同方向的距离
-       * 
-      */
-      for (let i = 1; i < this.row - 1; i++) {
-        for (let j = 1; j < this.column - 1; j++) {
-          // top
-          this.bottomToTopBoundary(this.pointsOrigin[i][j], this.pointsOrigin[i - 1][j - 1])
-          // left 
-          this.rightToLeftBoundary(this.pointsOrigin[i][j], this.pointsOrigin[i][j - 1])
-        }
-      }
-    }
-    // 用于计算根据每个原始点的dfs
-    GeneratePoints.prototype.perOriginPointDfs = function () {
-      let points = this.pointsOrigin.flat().sort((p1, p2) => p1.value - p2.value)
-      while(points.length) {
-        let point = points.pop()
-        this._bfs(point)
-      }
-      
-      return this.data
-    }
-    GeneratePoints.prototype._bfs = function (currentPoint) {
-      const {
-        value: initValue,
-        left: leftBoundary,
-        right: rightBoundary,
-        top: topBoundary,
-        bottom: bottomBoundary
-      } = currentPoint
-      const queue = [currentPoint]
-      const vector = this.vector
-      const data = this.data
-      const memo = {}
-      while(queue.length) {
-        const point = queue.pop()
-        for (let v of vector) {
-          let x = point.x + v[0]
-          let y = point.y + v[1]
-          let key = x + '_' + y
-          if(memo[key]) continue
-          let value = point.value - 1
-          if(x >= leftBoundary && x <= rightBoundary && y >= topBoundary && y <= bottomBoundary) {
-            memo[key] = true
-            data.push({
-              x: x,
-              y: y,
-              value: value,
-              radius: 90
-            })
-            queue.push({
-              x: x,
-              y: y ,
-              value: value
-            })
-          }
-        }
-      }
-      return data
-    }
-
-    let instance = new GeneratePoints(500, 500, 3, 3, 10)
-    instance.init()
-    instance.computedBoundary()
-    instance.perOriginPointDfs()
-    console.log(instance.data)
   </script>
 </body>
 
