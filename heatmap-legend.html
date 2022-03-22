@@ -139,7 +139,7 @@
       this.row = row
       this.column = column
       this.pointGap = pointGap
-      this.vector = [[0, pointGap], [0, -pointGap], [pointGap, 0], [-pointGap, 0]]
+      this.vector = [[pointGap, 0], [pointGap, pointGap], [0, pointGap], [-pointGap, pointGap], [-pointGap, 0], [-pointGap, -pointGap], [0, -pointGap], [pointGap, -pointGap]]
       this.xAxisGap = floor(width / (column + 1))
       this.yAxisGap = floor(height / (row + 1))
 
@@ -154,7 +154,7 @@
           colArr.push({
             x: this.xAxisGap * c,
             y: this.yAxisGap * r,
-            value: floor(Math.random() * 100 + 30),
+            value: floor(Math.random() * 50),
             top: 0,
             bottom: 0,
             left: 0,
@@ -181,7 +181,7 @@
       const topDistance = currentPoint.y - topPoint.y
       const topTotal = currentPoint.value + topPoint.value
       const topScale = (currentPoint.value / topTotal) * topDistance
-      
+
       currentPoint.top = floor(currentPoint.y - topScale)
       topPoint.bottom = floor(topPoint.y + topDistance - topScale)
     }
@@ -230,7 +230,7 @@
     // 用于计算根据每个原始点的dfs
     GeneratePoints.prototype.perOriginPointDfs = function () {
       let points = this.pointsOrigin.flat().sort((p1, p2) => p1.value - p2.value)
-      while(points.length) {
+      while (points.length) {
         let point = points.pop()
         this._bfs(point)
       }
@@ -245,31 +245,31 @@
         bottom: bottomBoundary
       } = currentPoint
       const queue = [currentPoint]
-      
+
       const vector = this.vector
       const data = this.data
       data.push(currentPoint)
       const memo = {}
 
-      while(queue.length) {
+      while (queue.length) {
         const point = queue.pop()
         for (let v of vector) {
           let x = point.x + v[0]
           let y = point.y + v[1]
           let key = x + '_' + y
-          if(memo[key]) continue
-          let value = point.value - 5
-          if(x >= leftBoundary && x <= rightBoundary && y >= topBoundary && y <= bottomBoundary) {
+          if (memo[key]) continue
+          let value = Math.random() * point.value
+          if (x >= leftBoundary && x <= rightBoundary && y >= topBoundary && y <= bottomBoundary) {
             memo[key] = true
             data.push({
               x: x,
               y: y,
               value: Math.abs(floor(value)),
-              radius: Math.abs(floor(value/50) * 100)
+              radius: Math.abs(floor(value / 20) * 100)
             })
             queue.push({
               x: x,
-              y: y ,
+              y: y,
               value: Math.abs(floor(value))
             })
           }
@@ -278,9 +278,9 @@
       return data
     }
 
-    width =  (+window.getComputedStyle(document.body).width.replace(/px/, '')),
-    height = (+window.getComputedStyle(document.body).height.replace(/px/, ''))
-    let instance = new GeneratePoints(width, height, 3, 3, 50)
+    width = (+window.getComputedStyle(document.body).width.replace(/px/, '')),
+      height = (+window.getComputedStyle(document.body).height.replace(/px/, ''))
+    let instance = new GeneratePoints(width, height, 10, 10, 10)
     instance.init()
     instance.computedBoundary()
     instance.perOriginPointDfs()
@@ -354,10 +354,19 @@
           heatMapInstance = h337.create({
             container: heatMapContainer.value,
             canvas: canvasEl,
+            // backgroundColor: 'blue',
             width: rectInfo.width,
+            // gradient: 0.6,
+            gradient: {
+              // enter n keys between 0 and 1 here
+              // for gradient color customization
+              '.3': 'blue',
+              '.5': 'yellow',
+              '.8': 'red'
+            },
             height: rectInfo.height,
-            maxOpacity: 0.5,
-            minOpacity: 0.1,
+            maxOpacity: 0.9,
+            minOpacity: 0,
             radius: 100,
             blur: 1,
             onExtremaChange: function onExtremaChange(data) {
