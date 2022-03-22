@@ -265,7 +265,7 @@
               x: x,
               y: y,
               value: Math.abs(floor(value)),
-              radius: Math.abs(floor(value / 20) * 100)
+              radius: Math.abs(floor(value / 50) * 100)
             })
             queue.push({
               x: x,
@@ -280,7 +280,7 @@
 
     width = (+window.getComputedStyle(document.body).width.replace(/px/, '')),
       height = (+window.getComputedStyle(document.body).height.replace(/px/, ''))
-    let instance = new GeneratePoints(width, height, 10, 10, 10)
+    let instance = new GeneratePoints(width, height, 3, 3, 30)
     instance.init()
     instance.computedBoundary()
     instance.perOriginPointDfs()
@@ -360,20 +360,17 @@
             gradient: {
               // enter n keys between 0 and 1 here
               // for gradient color customization
-              '.1': '#313695',
-              '.2': '#4575b4',
-              '.3': '#74add1',
-              '.4': '#ffffbf',
-              '.5': '#fee090',
-              '.6': '#fdae61',
-              '.7': '#f46d43',
-              '.8': '#d73027',
-              '1': '#a50026'
+              '0.1': 'blue',
+              '0.2': 'blue',
+              '0.4': 'green',
+              '0.4': 'yellow',
+              '0.6': 'red'
             },
             height: rectInfo.height,
-            maxOpacity: 0.9,
-            minOpacity: 0,
-            // radius: 100,
+            // opacity: 1,
+            // maxOpacity: 0.9,
+            minOpacity: 0.6,
+            radius: Math.random() * 100,
             blur: 1,
             onExtremaChange: function onExtremaChange(data) {
               // data.min = 0
