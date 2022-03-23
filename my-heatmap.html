@@ -136,7 +136,6 @@
       }
       return this.data
     }
-
     GeneratePoints.prototype._bfs = function (currentPoint) {
       const {
         value: initValue,
@@ -166,13 +165,13 @@
             data.push({
               x: x,
               y: y,
-              value: value - Math.random(), //noise.perlin2(value / 100, value / 100) + 0.5,
+              value: value - Math.random() / 100000000, //noise.perlin2(value / 100, value / 100) + 0.5,
               // radius: Math.abs(floor(value / 50) * 100)
             })
             queue.push({
               x: x,
               y: y,
-              value: value -  Math.random(), // noise.perlin2(value / 100, value / 100) + 0.5
+              value: value - Math.random() / 100000000, // noise.perlin2(value / 100, value / 100) + 0.5
             })
           }
         }
@@ -184,12 +183,12 @@
     let width = (+window.getComputedStyle(document.body).width.replace(/px/, ''))
     let height = (+window.getComputedStyle(document.body).height.replace(/px/, ''))
 
-    let instance = new GeneratePoints(width, height, 5, 5, 5)
+    let instance = new GeneratePoints(width, height, 3, 3, 1)
     let noise = getNoiseHelper();
     instance.init()
     instance.computedBoundary()
     instance.perOriginPointDfs()
-    console.log(instance.pointsOrigin, instance.data)
+    // console.log(instance.pointsOrigin, instance.data)
 
 
     var dom = document.getElementById("container");
@@ -212,14 +211,13 @@
       //   } 
       // }
       const allPoints = instance.data
-      let maxVal = -1000
-      let minVal = 1000
+      let maxVal = -Infinity
+      let minVal = Infinity
       for(let i = 0, len = allPoints.length; i < len; i++) {
-        maxVal = allPoints.value > maxVal ? allPoints.value : maxVal
-        minVal = allPoints.value < minVal ? allPoints.value : minVal
-        data.push([allPoints[i].x, allPoints[i].y, noise.perlin2(allPoints[i].x/300, allPoints[i].y/300) + allPoints[i].value * Math.random()])
+        maxVal = allPoints[i].value > maxVal ? allPoints[i].value : maxVal
+        minVal = allPoints[i].value < minVal ? allPoints[i].value : minVal
+        data.push([allPoints[i].x, allPoints[i].y, noise.perlin2(allPoints[i].x/300, allPoints[i].y/300) + allPoints[i].value])
       }
-      console.log(maxVal, minVal)
       data.sort((a, b) => {
         if(a.x - b.x > 0) {
           return true
@@ -232,14 +230,18 @@
       return data;
     }
     let data = generateData();
+    console.log(data)
+    console.log(data.some((item, m) => data.some((a, n) => {
+      return item[0] === a[0] && item[1] === a[1] && m !== n
+    })))
     // 配置项
     option = {
       tooltip: {
-        show: false
+        // show: false
       },
       grid: {
         top: 0,
-        bott0m: 0,
+        bottom: 0,
         right: 0,
         left: 0,
         width: '100%',
@@ -256,7 +258,7 @@
         orient: 'horizontal',
         right: 30,
         min: 0,
-        max: 10,
+        max: 100,
         calculable: true,
         realtime: false,
         inRange: {
@@ -289,7 +291,7 @@
             }
           },
           itemStyle: {
-            opatity: 0.8,
+            opatity: 0.6,
             borderJoin: 'butt',
             shadowBlur: 100,
             opacity: 0.8,

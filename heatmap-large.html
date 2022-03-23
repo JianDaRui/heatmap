@@ -26,7 +26,7 @@
     let noise = getNoiseHelper();
     let xData = [];
     let yData = [];
-    let random = Math.random()
+    let random = 0.1952210539594203 // Math.random()
     console.log(random)
     noise.seed(random);
     // 生成数据
@@ -34,7 +34,7 @@
       let data = [];
       for (let i = 0; i <= 300; i++) {
         for (let j = 0; j <= 300; j++) {
-          data.push([i, j, noise.perlin2(i / 200, j / 200) + 0.5]);
+          data.push([i, j, noise.perlin2(i / 500, j / 500) + 0.5]);
         }
       }
       // for (let j = 0; j < 100; j++) {
@@ -52,6 +52,14 @@
       },
       yAxis: {
         // show: false
+      },
+      grid: {
+        top: 0,
+        bottom: 0,
+        right: 0,
+        left: 0,
+        width: '100%',
+        height: '100%'
       },
       visualMap: {
         min: 0,
