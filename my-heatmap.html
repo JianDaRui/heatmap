@@ -1,140 +1,29 @@
+<!--
+    THIS EXAMPLE WAS DOWNLOADED FROM https://echarts.apache.org/examples/zh/editor.html?c=heatmap-large
+-->
 <!DOCTYPE html>
-<html lang="en">
+<html style="height: 100%">
 
 <head>
   <meta charset="utf-8">
-  <title>HeapMap</title>
+</head>
+
+<body style="height: 100%; margin: 0">
+  <div id="container" style="height: 100%"></div>
   <script src="https://unpkg.com/vue@next"></script>
   <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
   <!-- 导入组件库 -->
   <script src="https://unpkg.com/element-plus"></script>
-  <style>
-    body,
-    html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5.3.1/dist/echarts.min.js"></script>
+  <script type="text/javascript"
+    src="https://cdn.jsdelivr.net/npm/echarts@5.3.1/dist/extension/dataTool.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-gl@2/dist/echarts-gl.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-stat@latest/dist/ecStat.min.js"></script>
+  <script type="text/javascript">
 
-    body {
-      font-family: sans-serif;
-    }
-
-    body * {
-      font-weight: 200;
-    }
-
-    #app {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      background: rgba(0, 0, 0, .1);
-    }
-
-    #heatmapContainer {
-      width: 100%;
-      height: 100%;
-    }
-
-    .footer {
-      background: white;
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      padding: 10px;
-    }
-
-    .min {
-      float: left;
-    }
-
-    .max {
-      float: right;
-    }
-  </style>
-</head>
-
-<body>
-  <div id="app">
-    <div id="heatmapContainer" ref="heatMapContainer">
-    </div>
-    <!-- footer -->
-    <el-card class="footer" ref="footer" shadow="never">
-      <div>数据映射</div>
-      <span class="min" ref="minRef"></span>
-      <span class="max" ref="maxRef"></span>
-      <img class="gradient" ref="gradientRef" src="" style="width:100%" />
-      <el-button type="primary" size="small" @click="handlerInput">输入</el-button>
-    </el-card>
-
-    <!-- 输入对话框 -->
-    <el-dialog v-model="dialogInput" width="45%" title="数据录入">
-      <!-- 桌面大小 -->
-      <el-form :model="rectInfo">
-        <el-row>
-          <el-form-item label="宽" :label-width="formLabelWidth">
-            <el-input v-model="rectInfo.width" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-          <el-form-item label="高" :label-width="formLabelWidth">
-            <el-input v-model="rectInfo.height" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-        </el-row>
-      </el-form>
-      <!-- 数据表单 -->
-      <el-form :model="form">
-        <el-row :gutter="1">
-          <el-form-item label="value1" :label-width="formLabelWidth">
-            <el-input v-model="form[0].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-          <el-form-item label="value2" :label-width="formLabelWidth">
-            <el-input v-model="form[1].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-          <el-form-item label="value3" :label-width="formLabelWidth">
-            <el-input v-model="form[2].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-        </el-row>
-        <el-row :gutter="2">
-          <el-form-item label="value4" :label-width="formLabelWidth">
-            <el-input v-model="form[3].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-          <el-form-item label="value5" :label-width="formLabelWidth">
-            <el-input v-model="form[4].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-          <el-form-item label="value6" :label-width="formLabelWidth">
-            <el-input v-model="form[5].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-        </el-row>
-        <el-row :gutter="2">
-          <el-form-item label="value8" :label-width="formLabelWidth">
-            <el-input v-model="form[6].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-          <el-form-item label="value8" :label-width="formLabelWidth">
-            <el-input v-model="form[7].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-          <el-form-item label="value9" :label-width="formLabelWidth">
-            <el-input v-model="form[8].value" class="w-50 m-2" autocomplete="off" />
-          </el-form-item>
-        </el-row>
-      </el-form>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="hanlderClose">取消</el-button>
-          <el-button type="primary" @click="handlerSure">确认</el-button>
-        </span>
-      </template>
-    </el-dialog>
-    <!--  -->
-
-  </div>
-  <script src="./heatmap.js"></script>
-  <script>
-    const { reactive, ref, onMounted, computed, watch, toRaw } = Vue
     function floor(value) {
       return Math.floor(value)
     }
-    const noise = getNoiseHelper();
-    noise.seed(Math.random());
 
     function GeneratePoints(width, height, row = 3, column = 3, pointGap = 20) {
       this.width = width
@@ -142,7 +31,16 @@
       this.row = row
       this.column = column
       this.pointGap = pointGap
-      this.vector = [[pointGap, 0], [pointGap, pointGap], [0, pointGap], [-pointGap, pointGap], [-pointGap, 0], [-pointGap, -pointGap], [0, -pointGap], [pointGap, -pointGap]]
+      this.vector = [
+        [pointGap, 0],
+        [pointGap, pointGap],
+        [0, pointGap],
+        [-pointGap, pointGap],
+        [-pointGap, 0],
+        [-pointGap, -pointGap],
+        [0, -pointGap],
+        [pointGap, -pointGap]
+      ]
       this.xAxisGap = floor(width / (column + 1))
       this.yAxisGap = floor(height / (row + 1))
 
@@ -157,12 +55,12 @@
           colArr.push({
             x: this.xAxisGap * c,
             y: this.yAxisGap * r,
-            value: floor(Math.random() * 50),
+            value: floor(Math.random() * 100),
             top: 0,
             bottom: 0,
             left: 0,
             right: 0,
-            radius: 100
+            // radius: 100
           })
         }
         this.pointsOrigin.push(colArr)
@@ -171,7 +69,6 @@
     // 右边的点到左边的点的距离
     // 用于确定右边点的left,左边点的right
     GeneratePoints.prototype._rightToLeftBoundary = function (currentPoint, leftPoint) {
-      console.log(currentPoint, leftPoint)
       const leftDistance = currentPoint.x - leftPoint.x
       const leftTotal = currentPoint.value + leftPoint.value
       const leftScale = (currentPoint.value / leftTotal) * leftDistance
@@ -220,7 +117,7 @@
        * 上下左右边界的距离为
        * 相同方向上点的value占比 * 两点之间同方向的距离
        * 
-      */
+       */
       for (let r = 1; r < this.row - 1; r++) {
         for (let c = 1; c < this.column - 1; c++) {
           // top
@@ -239,7 +136,7 @@
       }
       return this.data
     }
-    
+
     GeneratePoints.prototype._bfs = function (currentPoint) {
       const {
         value: initValue,
@@ -252,6 +149,7 @@
 
       const vector = this.vector
       const data = this.data
+      // const data = []
       data.push(currentPoint)
       const memo = {}
 
@@ -268,142 +166,143 @@
             data.push({
               x: x,
               y: y,
-              value: noise.perlin2(value / 100, value / 100) + 0.5,
-              radius: Math.abs(floor(value / 50) * 100)
+              value: value - Math.random(), //noise.perlin2(value / 100, value / 100) + 0.5,
+              // radius: Math.abs(floor(value / 50) * 100)
             })
             queue.push({
               x: x,
               y: y,
-              value: noise.perlin2(value / 100, value / 100) + 0.5
+              value: value -  Math.random(), // noise.perlin2(value / 100, value / 100) + 0.5
             })
           }
         }
       }
+      // console.log(currentPoint, data)
+      // return this.data.push(data)
     }
-
+    
     let width = (+window.getComputedStyle(document.body).width.replace(/px/, ''))
     let height = (+window.getComputedStyle(document.body).height.replace(/px/, ''))
-    
-    let instance = new GeneratePoints(width, height, 3, 3, 30)
+
+    let instance = new GeneratePoints(width, height, 5, 5, 5)
+    let noise = getNoiseHelper();
     instance.init()
     instance.computedBoundary()
     instance.perOriginPointDfs()
     console.log(instance.pointsOrigin, instance.data)
 
-    const App = {
-      name: "App",
-      setup() {
-        const rectInfo = reactive({
-          width: (+window.getComputedStyle(document.body).width.replace(/px/, '')),
-          height: (+window.getComputedStyle(document.body).height.replace(/px/, ''))
-        })
-        let form = reactive([])
-        const dialogInput = ref(false)
 
-        const heatMapContainer = ref(null)
-        const gradientRef = ref(null)
-        const minRef = ref(null)
-        const maxRef = ref(null)
-
-        const data = computed(() => {
-          const values = form.map(item => item.value)
-          return {
-            min: Math.min(...values),
-            max: Math.max(...values),
-            data: form
-          }
-        })
-        const formLabelWidth = '80px'
-        let heatMapInstance = undefined
-
-        const canvasEl = document.createElement('canvas')
-        const ctx = canvasEl.getContext("2d")
-        ctx.translate(rectInfo.width / 2, rectInfo.height / 2)
-        ctx.scale(1, -1)
-        const legendCanvas = document.createElement('canvas')
-        legendCanvas.width = 100;
-        legendCanvas.height = 10;
-
-        const legendCtx = legendCanvas.getContext('2d')
-        let gradientCfg = {};
-
-        function handlerInput() {
-          dialogInput.value = true
-        }
-        function hanlderClose() {
-          dialogInput.value = false
-        }
-        function handlerSure() {
-          heatMapInstance.setData(generate())
-          dialogInput.value = false
-        }
-
-        function updateLegend(data) {
-          minRef.value.innerHTML = data.min
-          maxRef.value.innerHTML = data.max
-          if (data.gradient != gradientCfg) {
-            gradientCfg = data.gradient
-            let gradient = legendCtx.createLinearGradient(0, 0, 100, 1)
-            for (let key in gradientCfg) {
-              gradient.addColorStop(key, gradientCfg[key])
-            }
-
-            legendCtx.fillStyle = gradient
-            legendCtx.fillRect(0, 0, 100, 10)
-            gradientRef.value.src = legendCanvas.toDataURL()
-          }
-        }
-
-        onMounted(() => {
-          heatMapInstance = h337.create({
-            container: heatMapContainer.value,
-            canvas: canvasEl,
-            // backgroundColor: 'blue',
-            width: rectInfo.width,
-            // gradient: 0.6,
-            gradient: {
-              // enter n keys between 0 and 1 here
-              // for gradient color customization
-              '0.1': 'blue',
-              '0.2': 'blue',
-              '0.3': 'green',
-              '0.4': 'yellow',
-              '0.6': 'red'
-            },
-            height: rectInfo.height,
-            // opacity: 1,
-            maxOpacity: 0.6,
-            minOpacity: 0.5,
-            radius: Math.random() * 100,
-            blur: 1,
-            onExtremaChange: function onExtremaChange(data) {
-              updateLegend(data);
-            }
-          })
-          heatMapInstance.setData({
-            min: 0,
-            max: 100,
-            data: instance.data
-          })
-        })
-
-        return {
-          form,
-          minRef,
-          maxRef,
-          rectInfo,
-          gradientRef,
-          dialogInput,
-          handlerSure,
-          hanlderClose,
-          handlerInput,
-          formLabelWidth,
-          heatMapContainer
-        }
+    var dom = document.getElementById("container");
+    var myChart = echarts.init(dom);
+    var app = {};
+    var option;
+    // let noise = getNoiseHelper();
+    let xData = [];
+    let yData = [];
+    let random = Math.random()
+    noise.seed(random * 1000);
+    // 生成数据
+    function generateData(theta, min, max) {
+      let data = [];
+      // for (let i = 0; i <= 300; i++) {
+      //   for (let j = 0; j <= 300; j++) {
+      //     // let x = (max - min) * i / 200 + min;
+      //     // let y = (max - min) * j / 100 + min;
+      //     data.push([i, j, noise.perlin2(i / 200, j / 200) + 50]); 
+      //   } 
+      // }
+      const allPoints = instance.data
+      let maxVal = -1000
+      let minVal = 1000
+      for(let i = 0, len = allPoints.length; i < len; i++) {
+        maxVal = allPoints.value > maxVal ? allPoints.value : maxVal
+        minVal = allPoints.value < minVal ? allPoints.value : minVal
+        data.push([allPoints[i].x, allPoints[i].y, noise.perlin2(allPoints[i].x/300, allPoints[i].y/300) + allPoints[i].value * Math.random()])
       }
+      console.log(maxVal, minVal)
+      data.sort((a, b) => {
+        if(a.x - b.x > 0) {
+          return true
+        } else if(a.x - b.x < 0) {
+          return false
+        } else {
+          return a.y - b.y
+        }
+      })
+      return data;
     }
-
-    const app = Vue.createApp(App).use(ElementPlus).mount("#app")
+    let data = generateData();
+    // 配置项
+    option = {
+      tooltip: {
+        show: false
+      },
+      grid: {
+        top: 0,
+        bott0m: 0,
+        right: 0,
+        left: 0,
+        width: '100%',
+        height: '100%'
+      },
+      xAxis: {
+        show: false
+      },
+      yAxis: {
+        show: false
+      },
+      visualMap: {
+        type: 'continuous',
+        orient: 'horizontal',
+        right: 30,
+        min: 0,
+        max: 10,
+        calculable: true,
+        realtime: false,
+        inRange: {
+          // color: ['#4575b4', '#74add1', 'green', 'yellow', 'red'],
+          color: [
+            '#313695',
+            '#4575b4',
+            '#74add1',
+            '#abd9e9',
+            '#e0f3f8',
+            '#ffffbf',
+            '#fee090',
+            '#fdae61',
+            '#f46d43',
+            '#d73027',
+            '#a50026'
+          ]
+        }
+      },
+      series: [
+        {
+          name: '温度',
+          type: 'heatmap',
+          data: data,
+          coordinateSystem: 'cartesian2d',
+          emphasis: {
+            itemStyle: {
+              borderColor: 'green',
+              borderWidth: 10
+            }
+          },
+          itemStyle: {
+            opatity: 0.8,
+            borderJoin: 'butt',
+            shadowBlur: 100,
+            opacity: 0.8,
+            // color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
+            borderCap: 'round',
+            // borderRadius: [1, 0, 0, 1]
+          },
+          progressive: 9000,
+          progressiveThreshold: 10000,
+          animation: false
+        }
+      ]
+    };
 
     function getNoiseHelper() {
       class Grad {
@@ -510,6 +409,10 @@
         seed,
         perlin2
       };
+    }
+
+    if (option && typeof option === 'object') {
+      myChart.setOption(option);
     }
 
   </script>
