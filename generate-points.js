@@ -22,22 +22,22 @@ function GeneratePoints(width, height, row = 3, column = 3, pointGap = 20) {
   this.pointsOrigin = []
   this.data = []
 }
-
+let val = Math.random() * 100
 GeneratePoints.prototype.initPoints = function (initPointsValue) {
   for (let r = 0; r < this.row; r++) {
     let colArr = []
     for (let c = 0; c < this.column; c++) {
       // debugger
-      console.log(initPointsValue[r][c])
+      // console.log(initPointsValue[r][c])
       colArr.push({
         x: this.xAxisGap * (c + 1),
         y: this.yAxisGap * (r + 1),
-        value: initPointsValue[r][c],
+        value: val,
         top: 0,
         bottom: 0,
         left: 0,
         right: 0,
-        radius: 100
+        radius: 50
       })
     }
     this.pointsOrigin.push(colArr)

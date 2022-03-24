@@ -174,7 +174,8 @@
         const minRef = ref(null)
         const maxRef = ref(null)
 
-        let instance = new GeneratePoints(rectInfo.width, rectInfo.height, 3, 3, 50)
+        let instance = new GeneratePoints(rectInfo.width, rectInfo.height, 6, 6, 40)
+        instance.initPoints().computedBoundary().perOriginPointDfs()
         // instance.init()
         // instance.computedBoundary()
         // instance.perOriginPointDfs()
@@ -218,7 +219,7 @@
           // heatMapInstance.setData(generate())
           // let matrixArr = Array.from({length: rectInfo.row}, _ => new Array(rectInfo.column).fill(0))
           // form = reactive(matrixArr)
-          instance.initPoints(form).computedBoundary().perOriginPointDfs()
+          
           heatMapInstance.setData({
             min: 0,
             max: 100,
@@ -273,7 +274,7 @@
               '1': '#a50026'
             },
             height: rectInfo.height,
-            opacity: 0.8,
+            opacity: 0.9,
             radius: 100,
             blur: 1,
             onExtremaChange: function onExtremaChange(data) {
@@ -284,11 +285,11 @@
               });
             }
           })
-          // heatMapInstance.setData({
-          //   min: 0,
-          //   max: 100,
-          //   data: instance.data
-          // })
+          heatMapInstance.setData({
+            min: 0,
+            max: 100,
+            data: instance.data
+          })
         })
 
         return {
